@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#f4f2e9"/>
+  <circle cx="1020" cy="137" r="74" fill="#e4c86a"/>
+  <path d="M0 523Q200 420 416 503T850 488T1200 470V630H0Z" fill="#dce3ca"/>
+  <path d="M0 566Q290 495 514 552T1000 527T1200 547V630H0Z" fill="#b8c4a2"/>
+  <g font-family="Arial, sans-serif" fill="#233d39">
+    <text x="82" y="134" font-size="18" letter-spacing="6">A LITTLE BALANCE. A BIG ADVENTURE.</text>
+    <text x="73" y="290" font-size="152" font-weight="900" letter-spacing="-7">SEESAW</text>
+    <text x="86" y="353" font-size="33" font-family="sans-serif">空まで、もう一回。</text>
+    <text x="87" y="406" font-size="18" letter-spacing="2">CATCH. LAUNCH. REPEAT.</text>
+  </g>
+  <g transform="translate(875 448)">
+    <ellipse cy="82" rx="174" ry="18" fill="#233d39" opacity=".09"/>
+    <g fill="none" stroke="#233d39" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M-42 25-91 52-109 83M-17 36-35 61-37 84M42 25 91 52 109 83M17 36 35 61 37 84"/>
+    </g>
+    <rect x="-190" y="-35" width="380" height="27" rx="10" fill="#d5ae4d" transform="rotate(-9)"/>
+    <rect x="-190" y="-39" width="380" height="17" rx="8" fill="#e87b64" transform="rotate(-9)"/>
+    <circle cy="12" r="63" fill="#ddb957"/>
+    <circle cy="5" r="48" fill="#fffdf6"/>
+    <circle cx="13" cy="1" r="24" fill="#233d39"/>
+    <circle cx="19" cy="-7" r="8" fill="#fffdf6"/>
+  </g>
+  <g transform="translate(916 255) rotate(12)">
+    <path d="m-5 18-17 28m28-28 19 26" stroke="#233d39" stroke-width="11" stroke-linecap="round"/>
+    <rect x="-16" y="-20" width="32" height="43" rx="12" fill="#e87b64"/>
+    <path d="M-14-8-36-28M14-8 36-28" stroke="#e87b64" stroke-width="10" stroke-linecap="round"/>
+    <circle cy="-37" r="17" fill="#e8bd98"/>
+    <path d="M-17-42q4-24 29-10l5 13q-17-11-34-3" fill="#233d39"/>
+  </g>
+</svg>

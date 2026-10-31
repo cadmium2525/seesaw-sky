@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f4f3e9" />
+    <meta name="description" content="ひとつ目シーソーを動かして、ふたりを空へ。端でキャッチするほど高く飛べる、小さな3Dブラウザゲーム。" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <title>SEESAW — 空まで、もう一回。</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="world" aria-label="シーソーと空の3Dゲーム画面"></div>
+      <div class="paper-grain" aria-hidden="true"></div>
+      <header class="topbar">
+        <a class="brand" href="./" aria-label="SEESAW ホーム">
+          <svg class="brand-eye" viewBox="0 0 46 34" aria-hidden="true"><path d="m3 19 40-8"/><path d="m15 31 8-17 9 17"/><circle cx="23" cy="12" r="9"/><circle class="pupil" cx="25" cy="12" r="3.5"/></svg>
+          <span>SEESAW<span class="brand-dot">®</span></span>
+        </a>
+        <div class="top-note">A LITTLE BALANCE. A LOT OF SKY.</div>
+        <nav class="tools" aria-label="ゲーム設定">
+          <button id="sound-btn" class="icon-button" aria-label="サウンドをオフにする" title="サウンド（M）"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4Z"/><path id="sound-waves" d="M15 8a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></svg></button>
+          <button id="help-btn" class="icon-button" aria-label="遊び方を開く" title="遊び方"><span>?</span></button>
+          <button id="pause-btn" class="icon-button" aria-label="一時停止" title="一時停止（P）" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg></button>
+        </nav>
+      </header>
+
+      <main>
+        <section id="intro" class="intro" aria-labelledby="intro-title">
+          <div class="eyebrow"><span class="live-dot"></span> A SMALL GAME ABOUT GOING BIG</div>
+          <h1 id="intro-title">SEE<span class="title-sun">S</span>AW<span class="title-period">.</span></h1>
+          <h2>空まで、<br>もう一回。</h2>
+          <p class="intro-copy">きみは、ひとつ目のシーソー。<br>落ちてくるふたりを受け止めて、<br>まだ見たことのない高さへ。</p>
+          <button id="start-btn" class="primary-button">空をめざす <span aria-hidden="true">↗</span></button>
+          <div class="start-hint"><kbd>SPACE</kbd> でもスタート</div>
+          <div class="intro-rule"><span>01</span> うごく <i>→</i><span>02</span> うけとめる <i>→</i><span>03</span> とばす</div>
+        </section>
+
+        <div id="scene-note" class="scene-note" aria-hidden="true"><span class="note-line"></span><span>MEET YOUR SEESAW.<br><b>小さな脚で、大きなジャンプ。</b></span></div>
+
+        <section id="hud" class="hud" aria-label="ゲーム状況" hidden>
+          <div class="altitude-panel">
+            <div class="eyebrow">CURRENT ALTITUDE <span id="flight-direction">↑</span></div>
+            <div class="altitude"><span id="height">0.0</span><span class="unit">m</span></div>
+            <div class="record-line">この旅の最高 <b id="run-best">0.0 m</b><span class="record-separator"></span> 自己ベスト <b id="best">0.0 m</b></div>
+          </div>
+          <div class="catch-panel"><div class="eyebrow">GOOD CATCHES</div><div><span id="catch-count">00</span><span class="catch-mark">↗</span></div><p id="target-side">右側でキャッチ</p></div>
+          <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+          <div id="flight-tag" class="flight-tag"><span class="live-dot"></span><span id="flight-label">木の上から、とびおりよう。</span></div>
+          <div class="ground-assist-wrap">
+            <div id="assist" class="ground-assist" hidden>
+              <div class="assist-label"><span><span class="live-dot"></span> GROUND RADAR</span><span id="assist-time">着地まで — s</span></div>
+              <div class="radar-track"><div class="radar-center"></div><div id="landing-marker" class="landing-marker"><span>↓</span></div><div id="board-marker" class="board-marker"><span class="mini-eye"></span></div></div>
+              <div class="radar-key"><span><i class="key-board"></i> シーソー</span><span><i class="key-person"></i> 着地点</span></div>
+            </div>
+            <div id="blind-note" class="blind-note" hidden><span class="blind-icon">◌</span><span>ここからは、感覚で。<small>着地5秒前 · 位置アシスト OFF</small></span></div>
+          </div>
+        </section>
+
+        <div id="movement" class="movement" hidden>
+          <button id="left-btn" class="move-button" aria-label="シーソーを左に移動"><span aria-hidden="true">←</span><kbd>A</kbd></button>
+          <div class="move-label">MOVE THE SEESAW<small>← → / A D <span>· Shift でゆっくり</span></small></div>
+          <button id="right-btn" class="move-button" aria-label="シーソーを右に移動"><span aria-hidden="true">→</span><kbd>D</kbd></button>
+        </div>
+
+        <dialog id="help-dialog" class="modal help-modal" aria-labelledby="help-title">
+          <button id="close-help" class="modal-close" aria-label="遊び方を閉じる">×</button>
+          <div class="eyebrow">HOW TO GO HIGHER</div>
+          <h2 id="help-title">うけとめて、空へ。</h2>
+          <p class="modal-lead">きみが動かすのは、地面のシーソー。<br>ふたりを交互に打ち上げよう。</p>
+          <ol class="how-list">
+            <li><span>01</span><div><b>左右に動いて、キャッチ。</b><p><kbd>←</kbd><kbd>→</kbd> または <kbd>A</kbd><kbd>D</kbd> で移動。<br>スマートフォンでは画面下の矢印を長押し。</p></div></li>
+            <li><span>02</span><div><b>端っこほど、もっと高く。</b><p>空いている側で受け止めると、反対側の人がジャンプ。端に近いほど、勢いが増す。</p></div></li>
+            <li><span>03</span><div><b>最後の5秒は、感覚で。</b><p>空では画面下のレーダーが位置のヒント。着地5秒前に消えるので、軌道をよく見て。</p></div></li>
+          </ol>
+          <p class="help-warning">ひとりでも地面に落ちたら、ゲームオーバー。</p>
+          <div class="help-keys"><span><kbd>P</kbd> 一時停止</span><span><kbd>R</kbd> リトライ</span><span><kbd>M</kbd> 音</span></div>
+        </dialog>
+
+        <div id="pause-overlay" class="overlay" hidden>
+          <section class="result-card" aria-labelledby="pause-title"><div class="eyebrow">TAKE A LITTLE BREATH</div><h2 id="pause-title">空で、ひとやすみ。</h2><p>準備ができたら、また飛ぼう。</p><button id="resume-btn" class="primary-button">つづける <span>↗</span></button><button id="pause-retry" class="text-button">はじめから</button></section>
+        </div>
+
+        <div id="gameover-overlay" class="overlay" hidden>
+          <section class="result-card" aria-labelledby="result-title"><div class="eyebrow">A GOOD LITTLE FLIGHT</div><h2 id="result-title">もう一回、空へ。</h2><p id="result-message">次は、もっと高くいける。</p><div class="result-score"><span id="result-height">0.0</span><small>m</small></div><div id="new-record" class="new-record" hidden>↗ NEW PERSONAL BEST</div><div class="result-stats"><span>キャッチ <b id="result-catches">0</b> 回</span><span>自己ベスト <b id="result-best">0.0 m</b></span></div><button id="retry-btn" class="primary-button">もう一回とぶ <span>↗</span></button><button id="home-btn" class="text-button">タイトルへもどる</button></section>
+        </div>
+        <div id="error-overlay" class="overlay" hidden><section class="result-card"><div class="eyebrow">A LITTLE TECHNICAL HICCUP</div><h2>空が開けませんでした。</h2><p id="error-message">WebGLに対応したブラウザで開いてください。</p><button id="reload-btn" class="primary-button">再読み込み <span>↻</span></button></section></div>
+      </main>
+
+      <footer id="footer" class="footer"><span>STAY CURIOUS. FLY A LITTLE HIGHER.</span><span class="footer-right"><span class="live-dot"></span> ひとつ目、ふたり、どこまでも。</span></footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
