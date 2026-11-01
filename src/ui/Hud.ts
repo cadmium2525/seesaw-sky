@@ -33,7 +33,6 @@ export class Hud {
   private readonly digBtn = $('digBtn') as HTMLButtonElement;
   private readonly passBtn = $('passBtn') as HTMLButtonElement;
   private readonly turnLabel = $('turnLabel');
-  private readonly stabBar = $('stabBar');
   private readonly toastEl = $('toast');
   private readonly hintEl = $('hint');
   private readonly cards = [$('card0'), $('card1')];
@@ -62,7 +61,7 @@ export class Hud {
     // 遊び方の道具表
     $('toolTable').innerHTML = TOOL_ORDER.map((id) => {
       const t = TOOLS[id];
-      return `<tr><td>${t.name}</td><td>${t.scale}</td><td>${t.uses === Infinity ? '無制限' : `${t.uses}回`}</td><td>${t.description}</td></tr>`;
+      return `<tr><td>${t.name}</td><td>${t.scale}</td><td>${t.description}</td></tr>`;
     }).join('');
   }
 
@@ -112,12 +111,6 @@ export class Hud {
       const key = label.dataset.param as keyof ToolParams;
       label.querySelector('input')!.value = String(params[key]);
     });
-  }
-
-  setStability(value: number): void {
-    const v = Math.max(0, Math.min(1, value));
-    this.stabBar.style.width = `${Math.max(3, v * 100)}%`;
-    this.stabBar.style.backgroundColor = v > 0.6 ? '#2a9d8f' : v > 0.3 ? '#f4a261' : '#e63946';
   }
 
   setEstimate(html: string): void {

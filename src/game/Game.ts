@@ -277,7 +277,6 @@ export class Game {
     this.clearAim();
     this.hud.lock(false);
     this.refreshHud();
-    this.hud.setStability(this.flag.state.stability);
     if (m.players.length === 2) {
       this.hud.toast(`${m.currentPlayer.name}の番`, 1200);
       if (!first) this.sfx.turn();
@@ -484,7 +483,6 @@ export class Game {
   private checkFlag(): void {
     if (this.flag.isFalling) return;
     const s = this.flag.evaluate(this.field);
-    this.hud.setStability(s.stability);
     if (s.fallen) {
       this.flag.topple(this.field);
       this.thudPlayed = false;

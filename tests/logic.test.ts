@@ -159,17 +159,13 @@ test('残りの砂が閾値以下になったら終了', () => {
   assert.equal(r?.winner, 0);
 });
 
-test('道具の使用回数制限', () => {
+test('道具はすべて回数無制限で使える', () => {
   const m = new Match({ mode: 'versus', initialVolume: 1, maxTurns: 99 });
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < 10; i++) {
     m.recordDig('excavator', 0.01);
     m.resolveTurn(false, 0.9);
-    m.recordDig('hand', 0.001);
-    m.resolveTurn(false, 0.9);
   }
-  assert.equal(m.canUse('excavator'), false);
-  assert.equal(m.canUse('hand'), true);
-  assert.throws(() => m.recordDig('excavator', 0.01));
+  for (const t of ['hand', 'scoop', 'shovel', 'excavator'] as const) assert.equal(m.canUse(t), true);
 });
 
 test('1ターンに2回は行動できない', () => {

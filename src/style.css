@@ -182,31 +182,6 @@ button {
   font-size: 13px;
   font-weight: 800;
 }
-.stability {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 6px;
-}
-.stab-icon {
-  color: #e63946;
-  font-size: 15px;
-}
-.stability .bar {
-  flex: 1;
-  height: 9px;
-  border-radius: 9px;
-  background: rgba(22, 50, 79, 0.15);
-  overflow: hidden;
-}
-.stability .bar i {
-  display: block;
-  height: 100%;
-  width: 100%;
-  border-radius: 9px;
-  background: #2a9d8f;
-  transition: width 0.25s, background-color 0.25s;
-}
 .icon-btn {
   width: 44px;
   height: 44px;
