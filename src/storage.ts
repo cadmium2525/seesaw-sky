@@ -1,9 +1,11 @@
+import type { CpuLevel } from './game/CpuPlayer';
 import type { Quality } from './scene/Stage';
 
 /** 端末内（localStorage）に保存する設定とハイスコア。サーバーには送らない。 */
 export interface Settings {
   quality: Quality | 'auto';
   muted: boolean;
+  cpuLevel: CpuLevel;
 }
 
 export interface BestRecord {
@@ -33,7 +35,7 @@ function write(key: string, value: unknown): void {
 }
 
 export function loadSettings(): Settings {
-  return read<Settings>(SETTINGS_KEY, { quality: 'auto', muted: false });
+  return read<Settings>(SETTINGS_KEY, { quality: 'auto', muted: false, cpuLevel: 'normal' });
 }
 
 export function saveSettings(s: Settings): void {

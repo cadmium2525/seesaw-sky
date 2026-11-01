@@ -1,7 +1,8 @@
 import { CONFIG, type ToolId } from '../config';
 import { TOOLS, TOOL_ORDER } from '../tools/DigTools';
 
-export type Mode = 'solo' | 'versus';
+/** solo: ひとりで練習 / cpu: CPUと対戦 / versus: 同じ端末で2人対戦 */
+export type Mode = 'solo' | 'cpu' | 'versus';
 export type EndReason = 'flag' | 'turns' | 'sand' | 'pass';
 
 export interface PlayerState {
@@ -58,7 +59,8 @@ export class Match {
     this.maxTurns =
       options.maxTurns ?? (options.mode === 'solo' ? CONFIG.match.maxTurnsSolo : CONFIG.match.maxTurnsVersus);
     const count = options.mode === 'solo' ? 1 : 2;
-    const defaults = options.mode === 'solo' ? ['あなた'] : ['プレイヤー1', 'プレイヤー2'];
+    const defaults =
+      options.mode === 'solo' ? ['あなた'] : options.mode === 'cpu' ? ['あなた', 'CPU'] : ['プレイヤー1', 'プレイヤー2'];
     this.players = Array.from({ length: count }, (_, i) => ({
       name: options.names?.[i] ?? defaults[i],
       score: 0,
@@ -130,7 +132,7 @@ export class Match {
 
     this.passesInRow = action === 'pass' ? this.passesInRow + 1 : 0;
     if (this.mode === 'solo' && action === 'pass') return this.finishByScore('pass');
-    if (this.mode === 'versus' && this.passesInRow >= 2) return this.finishByScore('pass');
+    if (this.players.length === 2 && this.passesInRow >= 2) return this.finishByScore('pass');
     if (remainingVolume <= this.initialVolume * CONFIG.match.endSandRatio) return this.finishByScore('sand');
     if (this.turn >= this.maxTurns) return this.finishByScore('turns');
 

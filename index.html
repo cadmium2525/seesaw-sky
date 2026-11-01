@@ -67,9 +67,18 @@
         <h1><span>SAND FLAG</span><span>BATTLE</span></h1>
         <p class="tagline">たくさん取れ。でも、旗を倒すな。</p>
         <div class="menu-buttons">
+          <button class="btn primary big" data-start="cpu">CPUと対戦</button>
+          <div class="cpu-level">
+            <span>CPUの強さ</span>
+            <div class="seg" id="cpuLevelSeg">
+              <button data-level="easy">よわい</button><button data-level="normal">ふつう</button><button data-level="hard">つよい</button>
+            </div>
+          </div>
           <button class="btn primary big" data-start="solo">ひとりで練習</button>
-          <button class="btn primary big" data-start="versus">同じ端末で2人対戦</button>
-          <button class="btn ghost" id="howtoBtn">遊び方</button>
+          <div class="sub-buttons">
+            <button class="btn ghost" data-start="versus">同じ端末で2人対戦</button>
+            <button class="btn ghost" id="howtoBtn">遊び方</button>
+          </div>
         </div>
         <p class="best" id="bestLabel"></p>
       </div>
@@ -80,7 +89,7 @@
       <div class="modal-box">
         <h2 id="howtoTitle">遊び方</h2>
         <ol class="howto-list">
-          <li><b>交互に砂を取る。</b>砂山の頂上の旗を倒さないように、1ターンに1回ずつ砂を掘ります。</li>
+          <li><b>CPUと交互に砂を取る。</b>砂山の頂上の旗を倒さないように、1ターンに1回ずつ砂を掘ります（あなたが先攻）。</li>
           <li><b>道具を選ぶ。</b>素手・スコップ・シャベル・ショベルカー。大きい道具ほどたくさん取れますが、崩落の危険も大きくなります。</li>
           <li><b>場所を決めて「掘る」。</b>スマホは1本指でタップ、PCはクリック。予想掘削範囲と量が表示されます。</li>
           <li><b>崩落を待つ。</b>掘ったあと砂が崩れ、旗が傾くことがあります。旗を倒した人はその場で負け。</li>

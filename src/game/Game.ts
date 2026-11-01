@@ -11,9 +11,10 @@ import { SandMesh } from '../terrain/SandMesh';
 import { brushOutline, DEFAULT_PARAMS, makeBrush, TOOLS, TOOL_ORDER, type Brush, type ToolParams } from '../tools/DigTools';
 import { SandBin, ToolAnimator } from '../tools/ToolModels';
 import { Hud } from '../ui/Hud';
+import { CPU_LEVEL_LABEL, CpuPlanner, type CpuLevel } from './CpuPlayer';
 import { Match, toLiters, type Mode } from './Match';
 
-type Phase = 'title' | 'aim' | 'digging' | 'settling' | 'falling' | 'result';
+type Phase = 'title' | 'aim' | 'cpu' | 'digging' | 'settling' | 'falling' | 'result';
 
 const PLAYER_COLORS = ['#ff6b4a', '#3a86ff'];
 const BIN_POSITIONS = [new THREE.Vector3(-1.02, 0, 1.08), new THREE.Vector3(1.02, 0, 1.08)];
@@ -39,7 +40,12 @@ export class Game {
   private readonly hud: Hud;
   private readonly clock = new THREE.Timer();
   private match: Match | null = null;
-  private mode: Mode = 'versus';
+  private mode: Mode = 'cpu';
+  private planner: CpuPlanner | null = null;
+  /** CPU の手番になってからの経過時間 */
+  private cpuTime = 0;
+  /** CPU が狙いを見せ始めた時刻（cpuTime 基準） */
+  private cpuAimAt = -1;
   private phase: Phase = 'title';
   private selectedTool: ToolId = 'scoop';
   private params: ToolParams = { ...DEFAULT_PARAMS };
@@ -167,6 +173,13 @@ export class Game {
       this.settings.quality = q;
       this.applySettings();
     });
+    $('cpuLevelSeg').addEventListener('click', (e) => {
+      const lv = (e.target as HTMLElement).dataset.level as CpuLevel | undefined;
+      if (!lv) return;
+      this.sfx.click();
+      this.settings.cpuLevel = lv;
+      this.applySettings();
+    });
     $('soundSeg').addEventListener('click', (e) => {
       const s = (e.target as HTMLElement).dataset.sound;
       if (!s) return;
@@ -204,6 +217,9 @@ export class Game {
     $('qualitySeg').querySelectorAll<HTMLButtonElement>('button').forEach((b) =>
       b.classList.toggle('on', b.dataset.q === s.quality),
     );
+    $('cpuLevelSeg').querySelectorAll<HTMLButtonElement>('button').forEach((b) =>
+      b.classList.toggle('on', b.dataset.level === s.cpuLevel),
+    );
     $('soundSeg').querySelectorAll<HTMLButtonElement>('button').forEach((b) =>
       b.classList.toggle('on', (b.dataset.sound === 'off') === s.muted),
     );
@@ -213,6 +229,7 @@ export class Game {
   private showTitle(): void {
     this.phase = 'title';
     this.match = null;
+    this.planner = null;
     this.resetWorld();
     this.hud.show(false);
     $('result').classList.add('hidden');
@@ -243,7 +260,7 @@ export class Game {
     this.hud.show(true);
     this.stage.controls.autoRotate = false;
     this.stage.resetView();
-    this.bins[1].group.visible = mode === 'versus';
+    this.bins[1].group.visible = mode !== 'solo';
     this.bins[0].group.position.copy(mode === 'solo' ? new THREE.Vector3(-0.9, 0, 1.2) : BIN_POSITIONS[0]);
     this.selectedTool = 'scoop';
     this.params = { ...DEFAULT_PARAMS };
@@ -261,11 +278,64 @@ export class Game {
     this.hud.lock(false);
     this.refreshHud();
     this.hud.setStability(this.flag.state.stability);
-    if (m.mode === 'versus') {
+    if (m.players.length === 2) {
       this.hud.toast(`${m.currentPlayer.name}の番`, 1200);
       if (!first) this.sfx.turn();
     } else if (first) {
       this.hud.toast('旗を倒さずに、たくさん取れ！', 1600);
+    }
+    if (this.isCpuTurn) this.startCpuTurn();
+  }
+
+  private get isCpuTurn(): boolean {
+    return this.match?.mode === 'cpu' && this.match.current === 1 && !this.match.isOver;
+  }
+
+  // ------------------------------------------------------------------ CPU
+
+  private startCpuTurn(): void {
+    const m = this.match!;
+    this.phase = 'cpu';
+    this.hud.lock(true);
+    this.hud.hint('CPUが考え中…');
+    this.cpuTime = 0;
+    this.cpuAimAt = -1;
+    this.planner = new CpuPlanner(this.field, this.flag.anchor, m.currentPlayer.uses, this.settings.cpuLevel);
+  }
+
+  /** CPU の思考を少しずつ進め、決まったら狙いを見せてから掘る */
+  private updateCpu(dt: number): void {
+    const planner = this.planner;
+    if (!planner) return;
+    this.cpuTime += dt;
+    if (!planner.done) {
+      planner.work(8);
+      return;
+    }
+    // 考えている感じを出すため、最低でも少し待つ
+    if (this.cpuTime < 0.9) return;
+    const move = planner.move;
+    if (!move) {
+      this.planner = null;
+      this.match!.recordPass();
+      this.hud.hint('');
+      this.hud.toast('CPUはパス', 1000);
+      this.endTurn(false);
+      return;
+    }
+    if (this.cpuAimAt < 0) {
+      this.cpuAimAt = this.cpuTime;
+      this.selectedTool = move.tool;
+      this.params = { ...move.params };
+      this.aim = new THREE.Vector3(move.x, this.field.heightAt(move.x, move.z), move.z);
+      this.aimLocked = true;
+      this.hud.hint('');
+      this.refreshHud();
+      return;
+    }
+    if (this.cpuTime - this.cpuAimAt > 0.9) {
+      this.planner = null;
+      this.dig();
     }
   }
 
@@ -301,7 +371,7 @@ export class Game {
   /** 予想掘削範囲と予想量を更新 */
   private refreshPreview(): void {
     const brush = this.currentBrush();
-    const inAim = this.phase === 'aim';
+    const inAim = this.phase === 'aim' || this.phase === 'cpu';
     if (!brush || !inAim) {
       this.preview.visible = false;
       this.previewFill.visible = false;
@@ -341,7 +411,7 @@ export class Game {
   private dig(): void {
     const m = this.match;
     const brush = this.currentBrush();
-    if (this.phase !== 'aim' || !m || !brush || !this.aimLocked || !m.canUse(this.selectedTool)) return;
+    if ((this.phase !== 'aim' && this.phase !== 'cpu') || !m || !brush || !this.aimLocked || !m.canUse(this.selectedTool)) return;
     const estimate = this.field.previewDig(brush);
     if (estimate < 0.0001) return;
     this.sfx.unlock();
@@ -406,7 +476,7 @@ export class Game {
     if (m.mode === 'solo' && !window.confirm('ここで終了して記録しますか？')) return;
     this.sfx.click();
     m.recordPass();
-    if (m.mode === 'versus') this.hud.toast(`${m.currentPlayer.name}はパス`, 1000);
+    if (m.players.length === 2) this.hud.toast(`${m.currentPlayer.name}はパス`, 1000);
     this.endTurn(false);
   }
 
@@ -456,7 +526,8 @@ export class Game {
       sand: '砂がほとんど無くなった',
       pass: m.mode === 'solo' ? '旗を守りきって終了' : '双方パスで終了',
     };
-    let kicker = m.mode === 'solo' ? 'ひとりで練習' : '2人対戦';
+    const level = CPU_LEVEL_LABEL[this.settings.cpuLevel];
+    let kicker = m.mode === 'solo' ? 'ひとりで練習' : m.mode === 'cpu' ? `CPUと対戦（${level}）` : '2人対戦';
     let title: string;
     let sub = reasonText[r.reason];
     if (m.mode === 'solo') {
@@ -472,6 +543,13 @@ export class Game {
         this.resultText = `${GAME_NAME} で ${liters[0].toFixed(1)} L 取ったところで旗を倒してしまった…⚑ #SANDFLAGBATTLE`;
         this.sfx.lose();
       }
+    } else if (m.mode === 'cpu') {
+      title = r.winner === null ? '引き分け！' : r.winner === 0 ? 'あなたの勝ち！' : 'CPUの勝ち…';
+      const vs = `あなた ${liters[0].toFixed(1)} L vs CPU ${liters[1].toFixed(1)} L`;
+      const verdict = r.winner === null ? `CPU（${level}）と引き分け` : r.winner === 0 ? `CPU（${level}）に勝利！` : `CPU（${level}）に負けた…`;
+      this.resultText = `${GAME_NAME} ${verdict}（${sub}）${vs} #SANDFLAGBATTLE`;
+      if (r.winner === 1) this.sfx.lose();
+      else this.sfx.win();
     } else {
       title = r.winner === null ? '引き分け！' : `${m.players[r.winner].name}の勝ち！`;
       const vs = `${m.players[0].name} ${liters[0].toFixed(1)} L vs ${m.players[1].name} ${liters[1].toFixed(1)} L`;
@@ -484,7 +562,7 @@ export class Game {
     $('resultPlayers').innerHTML = m.players
       .map(
         (p, i) => `<div class="result-player" style="--c:${PLAYER_COLORS[i]}">
-          <div class="rname">${p.name}${r.winner === i && m.mode === 'versus' ? ' 🏆' : ''}${r.toppledBy === i ? ' （旗を倒した）' : ''}</div>
+          <div class="rname">${p.name}${r.winner === i && m.players.length === 2 ? ' 🏆' : ''}${r.toppledBy === i ? ' （旗を倒した）' : ''}</div>
           <div class="rscore">${liters[i].toFixed(1)} L</div>
           <div class="rbest">最大一手 ${toLiters(p.bestMove).toFixed(1)} L ・ ${p.digs}回掘った</div>
         </div>`,
@@ -505,7 +583,7 @@ export class Game {
         liters: liters[i],
         color: PLAYER_COLORS[i],
         best: toLiters(p.bestMove),
-        winner: m.mode === 'versus' && r.winner === i,
+        winner: m.players.length === 2 && r.winner === i,
         toppled: r.toppledBy === i,
       })),
       footer: 'たくさん取れ。でも、旗を倒すな。 ※非公式記録',
@@ -638,7 +716,9 @@ export class Game {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const time = this.clock.getElapsed();
 
-    if (this.phase === 'digging') {
+    if (this.phase === 'cpu') {
+      this.updateCpu(dt);
+    } else if (this.phase === 'digging') {
       this.tools.update(dt);
     } else if (this.phase === 'settling' || this.phase === 'falling') {
       this.settleTime += dt;

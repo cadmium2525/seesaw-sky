@@ -204,3 +204,61 @@ test('分割して加算した掘削量も「最大一手」として記録さ�
   assert.ok(Math.abs(m.players[0].bestMove - 0.005) < 1e-12);
   assert.ok(Math.abs(m.players[0].score - 0.005) < 1e-12);
 });
+
+test('CPU対戦：あなたとCPUの2人で、2人対戦と同じルールで進む', () => {
+  const m = new Match({ mode: 'cpu', initialVolume: 1 });
+  assert.deepEqual(m.players.map((p) => p.name), ['あなた', 'CPU']);
+  assert.equal(m.maxTurns, CONFIG.match.maxTurnsVersus);
+  m.recordPass();
+  m.resolveTurn(false, 1);
+  m.recordPass();
+  assert.equal(m.resolveTurn(false, 1)?.reason, 'pass');
+});
+
+import { CpuPlanner } from '../src/game/CpuPlayer';
+import { createRandom } from '../src/util/random';
+
+function runCpu(field: SandField, anchor: ReturnType<typeof plantFlag>, uses: Match['players'][0]['uses'], level: 'easy' | 'normal' | 'hard', seed: number) {
+  const planner = new CpuPlanner(field, anchor, uses, level, createRandom(seed));
+  while (!planner.work(1000));
+  return planner.move;
+}
+
+test('CPU（つよい）は旗を倒さずに砂を取り続ける', () => {
+  const f = base.clone();
+  const anchor = plantFlag(f);
+  const m = new Match({ mode: 'cpu', initialVolume: f.totalVolume(), maxTurns: 99 });
+  for (let turn = 0; turn < 8; turn++) {
+    const move = runCpu(f, anchor, m.players[1].uses, 'hard', 100 + turn);
+    assert.ok(move, 'まだ安全な手があるはず');
+    assert.ok(m.players[1].uses[move.tool] > 0, '使用回数の残っている道具を選ぶ');
+    m.players[1].uses[move.tool] -= 1;
+    const got = f.dig(makeBrush(move.tool, move.params, move.x, move.z));
+    assert.ok(Math.abs(got - move.volume) < 1e-9, '予想した量をそのまま取れる');
+    f.settle();
+    assert.equal(evaluateSupport(f, anchor).fallen, false, `${turn}手目で旗が倒れた`);
+  }
+});
+
+test('旗が不安定な局面では、よわいCPUは倒すことがあるが、つよいCPUは倒さない', () => {
+  const f = base.clone();
+  const anchor = plantFlag(f);
+  f.dig(makeBrush('shovel', { ...DEFAULT_PARAMS, depth: 0.8 }, 0.2, 0));
+  f.settle();
+  const before = evaluateSupport(f, anchor).stability;
+  assert.ok(before > 0 && before < 0.6, `不安定な局面を作る: ${before}`);
+  const toppled = { easy: 0, hard: 0 };
+  for (let seed = 0; seed < 20; seed++) {
+    for (const level of ['easy', 'hard'] as const) {
+      const m = new Match({ mode: 'cpu', initialVolume: 1 });
+      const move = runCpu(f, anchor, m.players[1].uses, level, seed);
+      if (!move) continue;
+      const g = f.clone();
+      g.dig(makeBrush(move.tool, move.params, move.x, move.z));
+      g.settle();
+      if (evaluateSupport(g, anchor).fallen) toppled[level]++;
+    }
+  }
+  assert.equal(toppled.hard, 0);
+  assert.ok(toppled.easy > 0, 'よわいCPUは読み違えて倒すことがある');
+});
