@@ -299,7 +299,11 @@ export class Game {
     this.hud.hint('CPUが考え中…');
     this.cpuTime = 0;
     this.cpuAimAt = -1;
-    this.planner = new CpuPlanner(this.field, this.flag.anchor, m.currentPlayer.uses, this.settings.cpuLevel);
+    this.planner = new CpuPlanner(this.field, this.flag.anchor, m.currentPlayer.uses, this.settings.cpuLevel, Math.random, {
+      myScore: m.players[1].score,
+      oppScore: m.players[0].score,
+      turnsRemaining: m.maxTurns - m.turn,
+    });
   }
 
   /** CPU の思考を少しずつ進め、決まったら狙いを見せてから掘る */
@@ -308,7 +312,8 @@ export class Game {
     if (!planner) return;
     this.cpuTime += dt;
     if (!planner.done) {
-      planner.work(8);
+      // CPU の番は他に重い処理が無いので、1フレームに少し多めに考える
+      planner.work(14);
       return;
     }
     // 考えている感じを出すため、最低でも少し待つ

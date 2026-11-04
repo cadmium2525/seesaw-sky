@@ -258,3 +258,42 @@ test('旗が不安定な局面では、よわいCPUは倒すことがあるが�
   assert.equal(toppled.hard, 0);
   assert.ok(toppled.easy > 0, 'よわいCPUは読み違えて倒すことがある');
 });
+
+/** 旗がかなり不安定になった終盤の局面（安定度 0.1〜0.3 程度） */
+function fragilePosition() {
+  const f = base.clone();
+  const anchor = plantFlag(f);
+  f.dig(makeBrush('shovel', { ...DEFAULT_PARAMS, depth: 1 }, 0.17, 0));
+  f.settle();
+  return { f, anchor, stability: evaluateSupport(f, anchor).stability };
+}
+
+function plan(f: SandField, anchor: ReturnType<typeof plantFlag>, level: 'easy' | 'normal' | 'hard', seed: number, ctx: { myScore: number; oppScore: number; turnsRemaining: number }) {
+  const m = new Match({ mode: 'cpu', initialVolume: 1 });
+  const p = new CpuPlanner(f, anchor, m.players[1].uses, level, createRandom(seed), ctx);
+  while (!p.work(1000));
+  return p.move;
+}
+
+test('つよいCPUは旗が不安定な終盤でも、小さな手に逃げずに倒れない範囲でたくさん取る', () => {
+  const { f, anchor, stability } = fragilePosition();
+  assert.ok(stability > 0 && stability < 0.3, `不安定な局面: ${stability}`);
+  const move = plan(f, anchor, 'hard', 3, { myScore: 0.05, oppScore: 0.12, turnsRemaining: 5 });
+  assert.ok(move, '安全な手はあるはず');
+  const g = f.clone();
+  g.dig(makeBrush(move.tool, move.params, move.x, move.z));
+  g.settle();
+  assert.equal(evaluateSupport(g, anchor).fallen, false);
+  assert.ok(move.volume > 0.015, `15L 以上取る: ${(move.volume * 1000).toFixed(1)}L`);
+});
+
+test('ふつうのCPUは負けていて残りが少ないほど攻める（勝っている時より多く取る）', () => {
+  const { f, anchor } = fragilePosition();
+  let ahead = 0;
+  let behind = 0;
+  for (let seed = 0; seed < 8; seed++) {
+    ahead += plan(f, anchor, 'normal', seed, { myScore: 0.2, oppScore: 0.05, turnsRemaining: 4 })?.volume ?? 0;
+    behind += plan(f, anchor, 'normal', seed, { myScore: 0.05, oppScore: 0.2, turnsRemaining: 4 })?.volume ?? 0;
+  }
+  assert.ok(behind > ahead, `負けている時 ${(behind * 125).toFixed(1)}L > 勝っている時 ${(ahead * 125).toFixed(1)}L`);
+});
